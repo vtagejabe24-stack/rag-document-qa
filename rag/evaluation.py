@@ -138,6 +138,26 @@ def citation_check(answer: str, n_hits: int) -> dict:
             "invalid_citations": sum(1 for n in nums if not 1 <= n <= n_hits)}
 
 
+def token_recall(prediction: str, reference: str) -> float:
+    """Share of the reference's words that appear in the prediction. Unlike F1 it
+    does not penalise long answers, so it shows whether the answer is *in* a wordy
+    reply (but it rewards padding, so report it next to F1, never instead of it)."""
+    pred, ref = Counter(normalize_answer(prediction).split()), Counter(normalize_answer(reference).split())
+    if not ref:
+        return float(not pred)
+    return sum((pred & ref).values()) / sum(ref.values())
+
+
+def answer_recall(prediction: str, q: dict) -> float:
+    """Max token recall over the annotators' answers; abstention scored as in answer_f1."""
+    if not q["evidence"]:
+        return 1.0 if is_abstention(prediction) else 0.0
+    if is_abstention(prediction):
+        return 0.0
+    pred = strip_citations(prediction)
+    return max(token_recall(pred, r) for r in (q.get("answers") or [q["answer"]]))
+
+
 def answer_f1(prediction: str, q: dict) -> float:
     """QASPER Answer-F1: max token F1 over the annotators' answers. For an
     unanswerable question, abstaining scores 1 and anything else 0 (and vice versa)."""
@@ -185,6 +205,7 @@ def evaluate_answers(pipeline, qa: list[dict], limit: int | None = None, scoped:
         latency = time.perf_counter() - t0
         row = {"question": q["question"], "answerable": bool(q["evidence"]), "answer": text,
                "reference": q["answer"], "latency_s": latency, "answer_f1": answer_f1(text, q),
+               "answer_recall": answer_recall(text, q), "answer_words": len(text.split()),
                "abstained": is_abstention(text),
                "retrieved_evidence": any(is_relevant(h.chunk.text, q["evidence"]) for h in ans.hits)
                if q["evidence"] else None,
@@ -211,6 +232,10 @@ def evaluate_answers(pipeline, qa: list[dict], limit: int | None = None, scoped:
         "answer_f1": _mean(f1),
         "answer_f1_ci": list(bootstrap_ci(f1)),
         "answer_f1_answerable": _mean(r["answer_f1"] for r in answerable),
+        "answer_recall": _mean(r["answer_recall"] for r in rows),
+        "answer_recall_ci": list(bootstrap_ci([r["answer_recall"] for r in rows])),
+        "answer_recall_answerable": _mean(r["answer_recall"] for r in answerable),
+        "median_answer_words": sorted(r["answer_words"] for r in rows)[len(rows) // 2] if rows else 0,
         # isolates generation from retrieval: F1 where the right evidence was retrieved
         "answer_f1_when_evidence_retrieved": _mean(r["answer_f1"] for r in found),
         "abstain_rate_on_unanswerable": _mean(r["abstained"] for r in unanswerable),

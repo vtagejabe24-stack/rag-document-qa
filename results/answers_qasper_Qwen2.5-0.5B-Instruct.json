@@ -23,7 +23,9 @@
       "abstained": false,
       "retrieved_evidence": true,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 0.75,
+      "answer_words": 3
     },
     {
       "question": "which datasets did they experiment with?",
@@ -35,7 +37,9 @@
       "abstained": false,
       "retrieved_evidence": true,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 1.0,
+      "answer_words": 9
     },
     {
       "question": "what is the source of the news sentences?",
@@ -47,7 +51,9 @@
       "abstained": false,
       "retrieved_evidence": true,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 0.09090909090909091,
+      "answer_words": 12
     },
     {
       "question": "How do they match words before reordering them?",
@@ -59,7 +65,9 @@
       "abstained": false,
       "retrieved_evidence": true,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 1.0,
+      "answer_words": 16
     },
     {
       "question": "On which benchmarks they achieve the state of the art?",
@@ -71,7 +79,9 @@
       "abstained": false,
       "retrieved_evidence": true,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 1.0,
+      "answer_words": 2
     },
     {
       "question": "What does KBQA abbreviate for",
@@ -83,7 +93,9 @@
       "abstained": false,
       "retrieved_evidence": true,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 0.0,
+      "answer_words": 4
     },
     {
       "question": "What are the other algorithms tested?",
@@ -95,7 +107,9 @@
       "abstained": false,
       "retrieved_evidence": false,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 0.0,
+      "answer_words": 1
     },
     {
       "question": "What are the clinical datasets used in the paper?",
@@ -107,7 +121,9 @@
       "abstained": false,
       "retrieved_evidence": true,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 1.0,
+      "answer_words": 16
     },
     {
       "question": "what evaluation metrics were used?",
@@ -119,7 +135,9 @@
       "abstained": false,
       "retrieved_evidence": true,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 1.0,
+      "answer_words": 91
     },
     {
       "question": "What is the interannotator agreement for the human evaluation?",
@@ -131,7 +149,9 @@
       "abstained": false,
       "retrieved_evidence": null,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 0.0,
+      "answer_words": 1
     },
     {
       "question": "Is the student reflection data very different from the newspaper data?",
@@ -143,7 +163,9 @@
       "abstained": false,
       "retrieved_evidence": false,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 0.0,
+      "answer_words": 10
     },
     {
       "question": "What evaluations methods do they take?",
@@ -155,7 +177,9 @@
       "abstained": false,
       "retrieved_evidence": null,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 0.0,
+      "answer_words": 13
     },
     {
       "question": "What biases are found in the dataset?",
@@ -167,7 +191,9 @@
       "abstained": false,
       "retrieved_evidence": false,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 0.5,
+      "answer_words": 146
     },
     {
       "question": "Which demographic dimensions of people do they obtain?",
@@ -179,7 +205,9 @@
       "abstained": false,
       "retrieved_evidence": true,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 0.42857142857142855,
+      "answer_words": 95
     },
     {
       "question": "Is the data de-identified?",
@@ -191,7 +219,9 @@
       "abstained": false,
       "retrieved_evidence": true,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 1.0,
+      "answer_words": 1
     },
     {
       "question": "How many participants were trying this communication game?",
@@ -203,7 +233,9 @@
       "abstained": false,
       "retrieved_evidence": false,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 1.0,
+      "answer_words": 1
     },
     {
       "question": "What are the baselines used?",
@@ -215,7 +247,9 @@
       "abstained": false,
       "retrieved_evidence": true,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 0.6666666666666666,
+      "answer_words": 2
     },
     {
       "question": "What kind of repetitive and time-consuming activities does their assistant handle?",
@@ -227,7 +261,9 @@
       "abstained": false,
       "retrieved_evidence": true,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 0.024390243902439025,
+      "answer_words": 21
     },
     {
       "question": "What is the GhostVLAD approach?",
@@ -239,7 +275,9 @@
       "abstained": false,
       "retrieved_evidence": true,
       "n_citations": 1,
-      "invalid_citations": 1
+      "invalid_citations": 1,
+      "answer_recall": 0.3,
+      "answer_words": 23
     },
     {
       "question": "Do they evaluate only on English datasets?",
@@ -251,7 +289,9 @@
       "abstained": false,
       "retrieved_evidence": true,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 0.0,
+      "answer_words": 8
     },
     {
       "question": "Do they show on which examples how conflict works better than attention?",
@@ -263,7 +303,9 @@
       "abstained": false,
       "retrieved_evidence": true,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 0.0,
+      "answer_words": 30
     },
     {
       "question": "Are the automatically constructed datasets subject to quality control?",
@@ -275,7 +317,9 @@
       "abstained": false,
       "retrieved_evidence": true,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 0.0,
+      "answer_words": 14
     },
     {
       "question": "After how many hops does accuracy decrease?",
@@ -287,7 +331,9 @@
       "abstained": false,
       "retrieved_evidence": false,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 0.0,
+      "answer_words": 7
     },
     {
       "question": "How do they perform multilingual training?",
@@ -299,7 +345,9 @@
       "abstained": false,
       "retrieved_evidence": true,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 0.46153846153846156,
+      "answer_words": 56
     },
     {
       "question": "What architecture does the decoder have?",
@@ -311,7 +359,9 @@
       "abstained": false,
       "retrieved_evidence": true,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 0.0,
+      "answer_words": 6
     },
     {
       "question": "What type of inflections are considered?",
@@ -323,7 +373,9 @@
       "abstained": false,
       "retrieved_evidence": null,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 0.0,
+      "answer_words": 52
     },
     {
       "question": "What other models do they compare to?",
@@ -335,7 +387,9 @@
       "abstained": false,
       "retrieved_evidence": true,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 0.25,
+      "answer_words": 8
     },
     {
       "question": "What are the baselines?",
@@ -347,7 +401,9 @@
       "abstained": false,
       "retrieved_evidence": false,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 0.75,
+      "answer_words": 3
     },
     {
       "question": "Do they report results only on English data?",
@@ -359,7 +415,9 @@
       "abstained": false,
       "retrieved_evidence": null,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 0.0,
+      "answer_words": 10
     },
     {
       "question": "In what way does LiLi imitate how humans acquire knowledge and perform inference during an interactive conversation?",
@@ -371,7 +429,16 @@
       "abstained": false,
       "retrieved_evidence": true,
       "n_citations": 0,
-      "invalid_citations": 0
+      "invalid_citations": 0,
+      "answer_recall": 0.2571428571428571,
+      "answer_words": 31
     }
-  ]
+  ],
+  "answer_recall": 0.38264062495769813,
+  "answer_recall_ci": [
+    0.2384476634476635,
+    0.5299566422737154
+  ],
+  "answer_recall_answerable": 0.4415084134127286,
+  "median_answer_words": 10
 }

@@ -1,6 +1,6 @@
 import math
 
-from rag.evaluation import (answer_f1, bootstrap_ci, citation_check, evaluate_answers,
+from rag.evaluation import (answer_f1, answer_recall, bootstrap_ci, citation_check, evaluate_answers,
                             evaluate_retrieval, is_abstention, is_relevant, normalize_answer, token_f1)
 from rag.prompts import NOT_FOUND
 
@@ -18,6 +18,15 @@ def test_answer_f1_uses_best_reference_and_ignores_citations():
     q = {"evidence": ["x"], "answer": "BERT", "answers": ["BERT", "a BERT based model"]}
     assert answer_f1("BERT [1]", q) == 1.0
     assert answer_f1(NOT_FOUND, q) == 0.0
+
+
+def test_answer_recall_ignores_extra_words():
+    q = {"evidence": ["x"], "answer": "SimpleQuestions; WebQSP", "answers": ["SimpleQuestions; WebQSP"]}
+    wordy = "They achieve the state of the art on both SimpleQuestions and WebQSP benchmarks [1]."
+    assert answer_recall(wordy, q) == 1.0          # the full answer is in there...
+    assert answer_f1(wordy, q) < 0.4               # ...but F1 penalises the extra words
+    assert answer_recall(NOT_FOUND, q) == 0.0
+    assert answer_recall(NOT_FOUND, {"evidence": [], "answer": ""}) == 1.0
 
 
 def test_answer_f1_unanswerable_rewards_abstaining():
