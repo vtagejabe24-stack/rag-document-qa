@@ -11,6 +11,7 @@ import streamlit as st
 
 import config
 from rag.generator import LLMUnavailable
+from rag.highlight import best_sentences, highlight_html
 from rag.loader import SUPPORTED
 from rag.pipeline import RAGPipeline
 from rag import accounts, tools
@@ -116,7 +117,7 @@ with st.sidebar:
                 continue
             if status == "empty":
                 dest.unlink(missing_ok=True)
-                st.warning(f"{name}: no extractable text (scanned PDF?)")
+                st.warning(f"{name}: no text found, even with OCR")
             else:
                 st.success(f"{name}: {status}")
         st.rerun()
@@ -133,31 +134,39 @@ with st.sidebar:
     selected = st.multiselect("Search only in", list(docs), placeholder="All documents")
     st.caption(f"LLM: {pipe.llm_name}")
     st.caption(f"Embeddings: {config.EMBED_MODEL}")
+    use_hybrid = st.toggle("Hybrid search (keywords + meaning)", value=config.ENABLE_HYBRID,
+                           help="Adds BM25 keyword matching to the embedding search. Helps with exact "
+                                "names, acronyms and numbers.")
     use_rerank = st.toggle("Cross-encoder reranking (slower, optional)", value=config.ENABLE_RERANKER)
     top_k = st.slider("Chunks sent to the LLM", 1, 10, config.TOP_K_CONTEXT)
     if st.button("Clear conversation"):
         st.session_state.messages = []
         st.rerun()
     if not pipe.supports_tools:
-        st.info("Running the offline FLAN-T5 model. Set ANTHROPIC_API_KEY for better answers, "
-                "follow-up questions and the study tools.")
+        st.info(f"Running the offline model {config.LOCAL_LLM}. Set ANTHROPIC_API_KEY for better "
+                "answers, follow-up questions and the study tools.")
 
 
 # ------------------------------------------------------------------ helpers
-def show_sources(hits) -> None:
-    if not hits:
+def show_sources(sources) -> None:
+    """sources: list of (excerpt number, hit, sentences to highlight)."""
+    if not sources:
         return
-    with st.expander(f"Sources ({len(hits)})"):
-        for i, h in enumerate(hits, 1):
+    with st.expander(f"Sources ({len(sources)})"):
+        for i, h, marks in sources:
             rr = f" · rerank {h.rerank_score:.2f}" if h.rerank_score is not None else ""
             st.markdown(f"**[{i}] 📄 {h.chunk.source}** — 📍 {h.chunk.location()}  \n"
                         f"<small>similarity {h.score:.2f}{rr}</small>", unsafe_allow_html=True)
-            st.caption(h.chunk.text[:700] + ("…" if len(h.chunk.text) > 700 else ""))
+            st.markdown(f"<div style='font-size:0.9em;opacity:0.85'>{highlight_html(h.chunk.text, marks)}</div>",
+                        unsafe_allow_html=True)
 
 
 def cited(text: str, hits) -> list:
+    """The excerpts the answer cites (all of them if it cites none), keeping their
+    original numbers, each with the sentence that best supports the answer."""
     nums = {int(n) for n in re.findall(r"\[(\d+)\]", text)}
-    return [h for i, h in enumerate(hits, 1) if i in nums] or hits
+    picked = [(i, h) for i, h in enumerate(hits, 1) if i in nums] or list(enumerate(hits, 1))
+    return [(i, h, best_sentences(pipe.embedder, text, h.chunk.text)) for i, h in picked]
 
 
 def run_tool(label, fn, *args):
@@ -194,7 +203,7 @@ with chat_tab:
         with st.chat_message("assistant"):
             try:
                 with st.spinner("Searching..."):
-                    ans = pipe.answer(question, history, selected or None, top_k, use_rerank)
+                    ans = pipe.answer(question, history, selected or None, top_k, use_rerank, use_hybrid)
                 if ans.search_query != question:
                     st.caption(f"🔎 Searched for: *{ans.search_query}*")
                 text = st.write_stream(ans.stream)

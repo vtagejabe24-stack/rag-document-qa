@@ -1,7 +1,8 @@
-﻿"""Phase 16 - model comparison experiments (retrieval only, no API key needed).
+"""Phase 16 - model comparison experiments (retrieval only, no API key needed).
 
   python experiments.py --dataset qasper             # all three experiments
-  python experiments.py --dataset qasper embeddings  # or: chunking | rerank
+  python experiments.py --dataset qasper embeddings  # or: chunking | rerank | retrieval
+  python experiments.py --dataset qasper_full retrieval   # dense vs hybrid vs reranker, 890 questions
 
 Results are printed as tables and saved to results/<dataset>_<experiment>.json."""
 from __future__ import annotations
@@ -17,7 +18,7 @@ from rag.pipeline import RAGPipeline
 KS = (1, 3, 5, 10)
 
 ap = argparse.ArgumentParser()
-ap.add_argument("which", nargs="?", default="all", choices=["all", "embeddings", "chunking", "rerank"])
+ap.add_argument("which", nargs="?", default="all", choices=["all", "embeddings", "chunking", "rerank", "retrieval"])
 ap.add_argument("--dataset", default="sample", choices=list(config.DATASETS))
 ap.add_argument("--all-documents", action="store_true",
                 help="search every document instead of only the question's own paper")
@@ -80,6 +81,27 @@ def exp_rerank(qa) -> None:
     save("rerank", rows)
 
 
+def exp_retrieval(qa) -> None:
+    """Dense vs hybrid (BM25 + FAISS) search, with and without the cross-encoder, and
+    how many candidates the cross-encoder needs to rescore."""
+    p, secs = build(config.EMBED_MODEL, config.CHUNK_SIZE)
+    setups = [
+        ("FAISS (dense) only", dict(hybrid=False, rerank=False)),
+        ("Hybrid: BM25 + FAISS (RRF)", dict(hybrid=True, rerank=False)),
+        ("FAISS top-10 + cross-encoder", dict(hybrid=False, rerank=True, candidates=10)),
+        ("FAISS top-20 + cross-encoder", dict(hybrid=False, rerank=True, candidates=20)),
+        ("Hybrid top-10 + cross-encoder", dict(hybrid=True, rerank=True, candidates=10)),
+        ("Hybrid top-20 + cross-encoder", dict(hybrid=True, rerank=True, candidates=20)),
+    ]
+    rows = []
+    for name, kw in setups:
+        m = evaluate_retrieval(p, qa, KS, scoped=SCOPED, ci=True, **kw)
+        rows.append({"setup": name, **m, "n_chunks": len(p.store.chunks), "index_s": secs})
+        print(f"  done: {name}", flush=True)
+    table("Retrieval strategies", rows, "setup")
+    save("retrieval", rows)
+
+
 qa = load_eval(EVAL_FILE)
 print(f"{sum(1 for q in qa if q['evidence'])} answerable questions from {EVAL_FILE}")
 if args.which in ("all", "embeddings"):
@@ -88,4 +110,6 @@ if args.which in ("all", "chunking"):
     exp_chunking(qa)
 if args.which in ("all", "rerank"):
     exp_rerank(qa)
+if args.which in ("all", "retrieval"):
+    exp_retrieval(qa)
 

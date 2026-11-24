@@ -19,9 +19,11 @@ class VectorStore:
         self.vectors: np.ndarray | None = None
         self.doc_hashes: dict[str, str] = {}     # file name -> sha256, to skip unchanged files
         self.index: faiss.Index | None = None
+        self.version = 0                          # bumped on every change (invalidates caches such as BM25)
 
     # ---------- mutation ----------
     def _rebuild(self) -> None:
+        self.version += 1
         self.index = None
         if self.vectors is not None and len(self.vectors):
             self.index = faiss.IndexFlatIP(self.vectors.shape[1])
@@ -35,6 +37,7 @@ class VectorStore:
             self._rebuild()
         else:
             self.index.add(vectors)
+            self.version += 1
 
     def remove(self, source: str) -> None:
         if source not in self.doc_hashes:

@@ -7,6 +7,7 @@ become headings, so citations show the section) and each question becomes one li
 of data/qasper/qa.jsonl.
 
   python prepare_qasper.py                       # 20 papers from the validation split
+  python prepare_qasper.py --full                 # whole validation split -> dataset "qasper_full"
   python prepare_qasper.py --split test --papers 50
 """
 from __future__ import annotations
@@ -14,7 +15,6 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import shutil
 
 import pandas as pd
 from huggingface_hub import hf_hub_download
@@ -23,7 +23,9 @@ import config
 
 ap = argparse.ArgumentParser()
 ap.add_argument("--split", default="validation", choices=["train", "validation", "test"])
-ap.add_argument("--papers", type=int, default=20)
+ap.add_argument("--papers", type=int, default=20, help="0 = all papers in the split")
+ap.add_argument("--full", action="store_true",
+                help="every paper with at least one answerable question -> data/qasper_full")
 ap.add_argument("--min-questions", type=int, default=3, help="skip papers with fewer answerable questions")
 args = ap.parse_args()
 
@@ -31,9 +33,14 @@ path = hf_hub_download("allenai/qasper", f"qasper/{args.split}/0000.parquet", re
                        revision="refs/convert/parquet", local_dir=config.ROOT / "data" / "qasper_raw")
 df = pd.read_parquet(path)
 
+name = "qasper_full" if args.full else "qasper"
+if args.full:
+    args.papers, args.min_questions = 0, 1
+docs_dir, eval_file, _ = config.DATASETS[name]
 
-def clean(text: str) -> str:
-    return re.sub(r"\s+", " ", text).strip()
+
+def clean(text: str | None) -> str:
+    return re.sub(r"\s+", " ", text or "").strip()
 
 
 def reference_answer(ans: dict) -> str:
@@ -49,10 +56,9 @@ def usable_evidence(ans: dict) -> list[str]:
     return [clean(e) for e in ans["evidence"] if e.strip() and not e.startswith("FLOAT SELECTED")]
 
 
-docs_dir = config.QASPER_DOCS_DIR
-if docs_dir.exists():
-    shutil.rmtree(docs_dir)
-docs_dir.mkdir(parents=True)
+docs_dir.mkdir(parents=True, exist_ok=True)
+for old in docs_dir.glob("*.md"):      # clear files, not the folder (OneDrive can lock folders)
+    old.unlink()
 
 qa_rows, n_papers = [], 0
 for _, paper in df.iterrows():
@@ -66,7 +72,10 @@ for _, paper in df.iterrows():
         ann = next((a for a in anns if not a["unanswerable"] and usable_evidence(a)), None)
         if ann is None:                                      # only figure/table evidence -> skip
             continue
-        rows.append({"question": clean(q), "answer": reference_answer(ann), "evidence": usable_evidence(ann)})
+        # every annotator's answer, for QASPER's max-over-annotators Answer-F1
+        refs = list(dict.fromkeys(reference_answer(a) for a in anns if not a["unanswerable"]))
+        rows.append({"question": clean(q), "answer": reference_answer(ann), "answers": refs,
+                     "evidence": usable_evidence(ann)})
     if sum(1 for r in rows if r["evidence"]) < args.min_questions:
         continue
 
@@ -83,11 +92,11 @@ for _, paper in df.iterrows():
     if n_papers == args.papers:
         break
 
-config.QASPER_EVAL_FILE.parent.mkdir(parents=True, exist_ok=True)
-with open(config.QASPER_EVAL_FILE, "w", encoding="utf-8") as f:
+eval_file.parent.mkdir(parents=True, exist_ok=True)
+with open(eval_file, "w", encoding="utf-8") as f:
     for r in qa_rows:
         f.write(json.dumps(r, ensure_ascii=False) + "\n")
 
 answerable = sum(1 for r in qa_rows if r["evidence"])
 print(f"{n_papers} papers -> {docs_dir}")
-print(f"{len(qa_rows)} questions ({answerable} answerable, {len(qa_rows) - answerable} unanswerable) -> {config.QASPER_EVAL_FILE}")
+print(f"{len(qa_rows)} questions ({answerable} answerable, {len(qa_rows) - answerable} unanswerable) -> {eval_file}")

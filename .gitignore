@@ -5,3 +5,10 @@ __pycache__/
 .env
 users/
 .DS_Store
+
+# raw QASPER download (rebuilt by prepare_qasper.py)
+data/qasper_raw/
+# full QASPER split and its index (rebuilt by prepare_qasper.py --full)
+data/qasper_full/
+vector_db_qasper_full/
+.pytest_cache/

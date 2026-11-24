@@ -135,16 +135,33 @@ class RAGPipeline:
                                       max_tokens=2000, effort="low").strip()
         return rewritten if rewritten and "\n" not in rewritten else question
 
+    def fit_context(self, question: str, hits: list[Hit]) -> list[Hit]:
+        """Keep only the best-ranked excerpts that fit the LLM's input window, so a small
+        local model never has its context silently truncated mid-excerpt. (Claude's
+        window is far larger than k excerpts, so it gets all of them.)"""
+        budget_fn = getattr(self.llm, "context_budget", None)
+        if budget_fn is None or not hits:
+            return hits
+        budget, kept = budget_fn(question), []
+        for h in hits:
+            if self.llm.count_tokens(prompts.format_context(kept + [h])) > budget:
+                break
+            kept.append(h)
+        return kept or hits[:1]          # always pass at least the best excerpt
+
     def answer(self, question: str, history: list[dict] | None = None,
                sources: list[str] | None = None, k: int = config.TOP_K_CONTEXT,
-               rerank: bool | None = None) -> Answer:
+               rerank: bool | None = None, hybrid: bool | None = None) -> Answer:
         rerank = config.ENABLE_RERANKER if rerank is None else rerank
+        hybrid = config.ENABLE_HYBRID if hybrid is None else hybrid
         history = list(history or []) if config.ENABLE_MEMORY else []
         if not self.store.chunks:
             return Answer(question, question, [], iter(["No documents are indexed yet - upload one first."]))
 
         query = self.search_query(question, history)
-        hits = self.retriever.retrieve(query, k, sources=sources, rerank=rerank)
+        hits = self.retriever.retrieve(query, k, sources=sources, rerank=rerank, hybrid=hybrid,
+                                       candidates=config.RERANK_CANDIDATES)
+        hits = self.fit_context(question, hits)
 
         recent = history[-6:]
         while recent and recent[0]["role"] != "user":   # the API needs a user turn first
