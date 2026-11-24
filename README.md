@@ -1,5 +1,7 @@
 # RAG-Based Document Question Answering System
 
+[![tests](https://github.com/vtagejabe24-stack/rag-document-qa/actions/workflows/tests.yml/badge.svg)](https://github.com/vtagejabe24-stack/rag-document-qa/actions/workflows/tests.yml)
+
 Upload documents (PDF, DOCX, PPTX, TXT, MD, or scanned pages and images), ask questions, and get an answer **with the source text and page/section it came from**, with the supporting sentence highlighted. Built from the components up (no LangChain) and evaluated on the **QASPER** benchmark (questions about NLP research papers).
 
 ```
@@ -144,6 +146,7 @@ Small chunks (128) hurt; larger chunks raise Recall@10 but dilute the text sent 
 
 ## Limits
 
+* PDF tables are extracted row by row only when they have full grid lines (common in business documents and Word exports). Research-paper tables drawn with horizontal rules only aren't detected as tables. Their text is still indexed as ordinary page text, just without the row structure.
 * OCR quality depends on the scan; handwriting and very low-resolution images read poorly.
 * Accounts are basic: no password reset, email verification or rate limiting, and the app should sit behind HTTPS if exposed publicly. Without `RAG_ACCOUNTS=1` everyone shares one library (optionally behind a single password).
 * QASPER figure/table evidence is excluded from the benchmark (it isn't in the dataset's extracted text).

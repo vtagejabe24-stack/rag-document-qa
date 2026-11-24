@@ -207,6 +207,10 @@ with chat_tab:
                 if ans.search_query != question:
                     st.caption(f"🔎 Searched for: *{ans.search_query}*")
                 text = st.write_stream(ans.stream)
+                bad = sorted({int(n) for n in re.findall(r"\[(\d+)\]", text)} - set(range(1, len(ans.hits) + 1)))
+                if bad:
+                    st.caption("⚠️ The answer cites " + ", ".join(f"[{n}]" for n in bad)
+                               + ", which isn't one of the excerpts it was given. Treat those parts with care.")
                 shown = cited(text, ans.hits) if "couldn't find" not in text else []
                 show_sources(shown)
                 st.session_state.messages.append({"role": "assistant", "content": text, "hits": shown})

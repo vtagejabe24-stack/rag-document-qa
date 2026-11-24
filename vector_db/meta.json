@@ -4,5 +4,9 @@
     "chunk_size": 256,
     "chunk_overlap": 40
   },
-  "doc_hashes": {}
+  "doc_hashes": {
+    "deep_learning.md": "5a9cc4d0170c31e0a7053371daed5b263a9850681d6c39a925ae9d0a2d90bc7b",
+    "machine_learning_basics.md": "e0c07abfc08bd7acffabf870d96cf783485939dd2a042a1e030314ecb76889ef",
+    "nlp_transformers.md": "3d1c452637200ff51c95d8da4ad698de1582724d809af439ac90918cc1e3dd1b"
+  }
 }
