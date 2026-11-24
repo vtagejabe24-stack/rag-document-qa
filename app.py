@@ -132,16 +132,22 @@ with st.sidebar:
             st.rerun()
 
     selected = st.multiselect("Search only in", list(docs), placeholder="All documents")
-    st.caption(f"LLM: {pipe.llm_name}" if pipe.supports_tools else f"LLM: {config.LOCAL_LLM} (offline, free)")
-    st.caption(f"Embeddings: {config.EMBED_MODEL}")
-    use_hybrid = st.toggle("Hybrid search (keywords + meaning)", value=config.ENABLE_HYBRID,
-                           help="Adds BM25 keyword matching to the embedding search. Helps with exact "
-                                "names, acronyms and numbers.")
-    use_rerank = st.toggle("Cross-encoder reranking (slower, optional)", value=config.ENABLE_RERANKER)
-    top_k = st.slider("Chunks sent to the LLM", 1, 10, config.TOP_K_CONTEXT)
     if st.button("Clear conversation"):
         st.session_state.messages = []
         st.rerun()
+
+    with st.expander("Advanced settings"):
+        st.caption(f"LLM: {pipe.llm_name}" if pipe.supports_tools else f"LLM: {config.LOCAL_LLM} (offline, free)")
+        st.caption(f"Embeddings: {config.EMBED_MODEL}")
+        use_hybrid = st.toggle("Hybrid search (keywords + meaning)", value=config.ENABLE_HYBRID,
+                               help="Adds BM25 keyword matching to the embedding search. Helps with exact "
+                                    "names, acronyms and numbers.")
+        use_rerank = st.toggle("Cross-encoder reranking (slower)", value=config.ENABLE_RERANKER,
+                               help="A second model reorders the top passages more carefully. "
+                                    "More accurate, about half a second slower per question.")
+        top_k = st.slider("Chunks sent to the LLM", 1, 10, config.TOP_K_CONTEXT,
+                          help="How many matching passages the answering model receives. "
+                               "Small offline models only read as many as fit their input limit.")
 
 
 # ------------------------------------------------------------------ helpers
