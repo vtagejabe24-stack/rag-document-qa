@@ -16,7 +16,7 @@ Measured on the full QASPER validation split (276 papers, 890 answerable questio
 * **The cross-encoder reranker is the biggest win:** MRR 0.429 → 0.474 and Recall@1 0.273 → 0.316, both clearly beyond the 95% confidence intervals. It costs a few hundred ms per query on a CPU, so it's a toggle.
 * **Hybrid search (BM25 + embeddings) helps a little on every metric** (Recall@10 0.839 → 0.866, MRR 0.429 → 0.440) for ~5 ms per query, so it is **on by default**. The gain is consistent but within the confidence intervals.
 * **The reranker only needs to rescore the top 10 candidates:** MRR 0.474 with 10 vs 0.470 with 20, at lower latency.
-* **Small local models are the weak link.** Offline answers reach Answer-F1 ≈ 0.22 (FLAN-T5) to 0.28 (Qwen2.5-0.5B), versus ~0.48 when FLAN-T5 is given the right evidence. Use Claude for good answers.
+* **Small local models are the weak link.** Offline answers reach Answer-F1 ≈ 0.22–0.26 (FLAN-T5, Qwen2.5-0.5B and 1.5B are statistically indistinguishable on 30 questions). Use Claude for good answers.
 
 ## Setup
 
@@ -60,7 +60,7 @@ The tests use a tiny fake embedder, so they need no model downloads. They also r
 | Variable | Feature | Default |
 |---|---|---|
 | `RAG_HYBRID=0` | Turn off BM25 keyword search fused with FAISS (also a toggle in the app) | on |
-| `RAG_LOCAL_LLM=...` | Offline model, e.g. `Qwen/Qwen2.5-0.5B-Instruct` (better answers, ~10× slower) | `google/flan-t5-base` |
+| `RAG_LOCAL_LLM=...` | Offline model, e.g. `Qwen/Qwen2.5-0.5B-Instruct` (~3× slower, streams its answer) | `google/flan-t5-base` |
 | `RAG_RERANK=1` | Cross-encoder reranking of the top retrieved chunks (also a toggle) | off |
 | `RAG_LLM=local` | Force the offline model even when Claude is configured (`claude` forces Claude) | auto |
 | `RAG_OCR=0` | Turn off OCR for scanned PDFs and images | on |
@@ -106,12 +106,15 @@ Dense and hybrid search take ~20–30 ms per query; reranking adds roughly 0.4�
 
 ### Local answer models: QASPER 20-paper subset (30 questions, hybrid search)
 
-| Model | Answer-F1 [95% CI] | F1 when evidence was retrieved | Time per answer (CPU) |
-|---|---|---|---|
-| google/flan-t5-base (default) | 0.216 [0.10–0.36] | 0.481 | ~10 s |
-| Qwen/Qwen2.5-0.5B-Instruct | 0.283 [0.15–0.42] | 0.327 | ~97 s |
+| Model | Answer-F1 [95% CI] | F1 when evidence was retrieved | Answers citing a source | Time per answer (CPU) |
+|---|---|---|---|---|
+| google/flan-t5-base (default) | 0.216 [0.10–0.36] | 0.481 | 10% | ~5 s |
+| Qwen/Qwen2.5-0.5B-Instruct | 0.264 [0.14–0.40] | 0.298 | 3% (citation invalid) | ~16 s |
+| Qwen/Qwen2.5-1.5B-Instruct | 0.230 [0.15–0.31] | 0.306 | 13% (all valid) | ~32 s |
 
-The intervals overlap heavily: 30 questions can't separate these two models. FLAN-T5 stays the default because it's ~10× faster. Neither small model reliably abstains on unanswerable questions or cites excerpts the way Claude does.
+The intervals overlap heavily: 30 questions can't separate these models, and the bigger Qwen isn't measurably better on Answer-F1. Its answers tend to be longer, which this word-overlap metric penalises, but it is the only one that cites sources correctly. FLAN-T5 stays the default because it's the fastest. None of the small models reliably abstains on unanswerable questions the way Claude does.
+
+Local models are loaded in float32 on purpose. Loading Qwen in its stored bfloat16 format made it about 100× slower on a laptop CPU, which has no fast bfloat16 instructions.
 
 ### Embedding model and chunk size: QASPER 20-paper subset (72 answerable questions, dense search)
 

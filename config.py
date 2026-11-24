@@ -26,9 +26,9 @@ MAX_UPLOAD_MB = 50
 # --- Deep learning models (Hugging Face) ---
 EMBED_MODEL = "BAAI/bge-small-en-v1.5"                  # bi-encoder, 384-dim, 512-token limit
 RERANK_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"   # cross-encoder reranker
-# Offline fallback generator. FLAN-T5 answers in ~10 s on a CPU. An instruction-tuned
-# chat model such as Qwen/Qwen2.5-0.5B-Instruct scored higher Answer-F1 on QASPER
-# (0.28 vs 0.22, 30 questions) but took ~100 s per answer, so it is opt-in.
+# Offline fallback generator. FLAN-T5 answers in ~5 s on a CPU. Instruction-tuned chat
+# models (Qwen/Qwen2.5-0.5B-Instruct ~16 s, 1.5B ~32 s) were not measurably better on
+# QASPER Answer-F1 (30 questions; see README), so they are opt-in.
 LOCAL_LLM = os.environ.get("RAG_LOCAL_LLM", "google/flan-t5-base")
 
 # --- Chunking (measured in tokens of the embedding model's tokenizer) ---

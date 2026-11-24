@@ -94,7 +94,10 @@ class LocalLLM:
         self.tokenizer = AutoTokenizer.from_pretrained(model_name)
         self.kind = "seq2seq" if AutoConfig.from_pretrained(model_name).is_encoder_decoder else "causal"
         cls = AutoModelForSeq2SeqLM if self.kind == "seq2seq" else AutoModelForCausalLM
-        self.model = cls.from_pretrained(model_name).eval()
+        # Force float32: recent transformers versions load a checkpoint's own dtype (often
+        # bfloat16), which most CPUs have no fast instructions for. On a laptop CPU this
+        # made Qwen2.5-0.5B read a 1,500-token prompt in ~1,100 s instead of ~9 s.
+        self.model = cls.from_pretrained(model_name, dtype=torch.float32).eval()
         self.name = f"{model_name} (local)"
 
     # ---- context budget: the pipeline sends only as many excerpts as fit ----
