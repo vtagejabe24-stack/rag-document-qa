@@ -132,7 +132,7 @@ with st.sidebar:
             st.rerun()
 
     selected = st.multiselect("Search only in", list(docs), placeholder="All documents")
-    st.caption(f"LLM: {pipe.llm_name}")
+    st.caption(f"LLM: {pipe.llm_name}" if pipe.supports_tools else f"LLM: {config.LOCAL_LLM} (offline, free)")
     st.caption(f"Embeddings: {config.EMBED_MODEL}")
     use_hybrid = st.toggle("Hybrid search (keywords + meaning)", value=config.ENABLE_HYBRID,
                            help="Adds BM25 keyword matching to the embedding search. Helps with exact "
@@ -142,9 +142,6 @@ with st.sidebar:
     if st.button("Clear conversation"):
         st.session_state.messages = []
         st.rerun()
-    if not pipe.supports_tools:
-        st.info(f"Running the offline model {config.LOCAL_LLM}. Set ANTHROPIC_API_KEY for better "
-                "answers, follow-up questions and the study tools.")
 
 
 # ------------------------------------------------------------------ helpers
