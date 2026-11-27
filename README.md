@@ -13,7 +13,8 @@ Question -> embed -> hybrid search (FAISS + BM25, fused) -> optional cross-encod
 
 Measured on the full QASPER validation split (276 papers, 890 answerable questions):
 
-* **The cross-encoder reranker is the biggest win:** MRR 0.429 → 0.474 and Recall@1 0.273 → 0.316, both clearly beyond the 95% confidence intervals. It costs a few hundred ms per query on a CPU, so it's a toggle.
+* **The cross-encoder reranker is the biggest win:** MRR 0.429 → 0.474 and Recall@1 0.273 → 0.316, both clearly beyond the 95% confidence intervals. It costs a few hundred ms per query on a CPU, small next to answer generation, so it is **on by default**.
+* **A relevance cutoff answers "not found" for off-topic questions without calling the LLM.** If the reranker's best score is below −8, the app replies that the documents don't contain the answer. On full QASPER this refuses 52% of questions asked against the wrong paper but only 4.7% of answerable ones. Questions about the right paper that it doesn't answer score almost like answerable ones, so the cutoff catches only 12% of those.
 * **Hybrid search (BM25 + embeddings) helps a little on every metric** (Recall@10 0.839 → 0.866, MRR 0.429 → 0.440) for ~5 ms per query, so it is **on by default**. The gain is consistent but within the confidence intervals.
 * **The reranker only needs to rescore the top 10 candidates:** MRR 0.474 with 10 vs 0.470 with 20, at lower latency.
 * **Among offline models, Qwen2.5-1.5B finds the answer most often, but wordily.** Its answers contain the reference answer far more often (answer recall 0.61 vs 0.37 for FLAN-T5), but they are twice as long, so word-overlap Answer-F1 can't tell the models apart (0.22–0.26). FLAN-T5 is the default because it is ~6× faster.
@@ -61,7 +62,7 @@ The tests use a tiny fake embedder, so they need no model downloads. They also r
 |---|---|---|
 | `RAG_HYBRID=0` | Turn off BM25 keyword search fused with FAISS (also a toggle in the app) | on |
 | `RAG_LOCAL_LLM=...` | Offline model, e.g. `Qwen/Qwen2.5-1.5B-Instruct` (finds answers more often, ~6× slower, streams its answer) | `google/flan-t5-base` |
-| `RAG_RERANK=1` | Cross-encoder reranking of the top retrieved chunks (also a toggle) | off |
+| `RAG_RERANK=0` | Turns off cross-encoder reranking of the top retrieved chunks (also a toggle), and with it the "not found" cutoff | on |
 | `RAG_LLM=local` | Force the offline model even when Claude is configured (`claude` forces Claude) | auto |
 | `RAG_OCR=0` | Turn off OCR for scanned PDFs and images | on |
 | `RAG_REWRITE=1` | Rewrite follow-up questions into standalone queries (Claude) | off |

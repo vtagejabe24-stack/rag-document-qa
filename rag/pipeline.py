@@ -149,6 +149,14 @@ class RAGPipeline:
             kept.append(h)
         return kept or hits[:1]          # always pass at least the best excerpt
 
+    @staticmethod
+    def nothing_relevant(hits: list[Hit]) -> bool:
+        """True when no passage is relevant enough to answer from. Small models often
+        answer anyway instead of saying "not found", so this check is done before them."""
+        if not hits or config.MIN_RERANK_SCORE is None or hits[0].rerank_score is None:
+            return False
+        return hits[0].rerank_score < config.MIN_RERANK_SCORE
+
     def answer(self, question: str, history: list[dict] | None = None,
                sources: list[str] | None = None, k: int = config.TOP_K_CONTEXT,
                rerank: bool | None = None, hybrid: bool | None = None) -> Answer:
@@ -161,6 +169,8 @@ class RAGPipeline:
         query = self.search_query(question, history)
         hits = self.retriever.retrieve(query, k, sources=sources, rerank=rerank, hybrid=hybrid,
                                        candidates=config.RERANK_CANDIDATES)
+        if self.nothing_relevant(hits):
+            return Answer(question, query, [], iter([prompts.NOT_FOUND]))
         hits = self.fit_context(question, hits)
 
         recent = history[-6:]

@@ -44,6 +44,33 @@ def test_answer_with_empty_library(make_pipeline):
     assert ans.hits == [] and "No documents" in "".join(ans.stream)
 
 
+def test_low_rerank_score_answers_not_found(make_pipeline, monkeypatch):
+    import config
+    from rag.prompts import NOT_FOUND
+
+    class FakeReranker:
+        def __init__(self, score):
+            self.score = score
+
+        def rerank(self, query, hits, top_k):
+            for h in hits:
+                h.rerank_score = self.score
+            return hits[:top_k]
+
+    llm = FakeLLM()
+    p = make_pipeline(DOCS, llm=llm)
+    p.sync_directory()
+    monkeypatch.setattr(config, "MIN_RERANK_SCORE", -8.0)
+
+    p.retriever._reranker = FakeReranker(-10.0)        # nothing relevant: skip the LLM
+    ans = p.answer("what is the capital of france", rerank=True)
+    assert ans.hits == [] and "".join(ans.stream) == NOT_FOUND and llm.last_context is None
+
+    p.retriever._reranker = FakeReranker(2.0)          # relevant: answer as usual
+    ans = p.answer("which pets bark", rerank=True)
+    assert ans.hits and "excerpts" in "".join(ans.stream)
+
+
 def test_fit_context_drops_excerpts_that_do_not_fit(make_pipeline):
     small = FakeLLM(budget=25)          # ~ one excerpt's worth of words
     p = make_pipeline(DOCS, llm=small)

@@ -65,9 +65,11 @@ def fake_embedder():
 @pytest.fixture
 def make_pipeline(tmp_path, monkeypatch):
     """Factory for a RAGPipeline over `files` (name -> text), using the fake models."""
+    import config
     from rag import pipeline as pipeline_mod
 
     monkeypatch.setattr(pipeline_mod, "get_embedder", lambda name: FakeEmbedder())
+    monkeypatch.setattr(config, "ENABLE_RERANKER", False)   # no cross-encoder download in tests
 
     def make(files: dict[str, str], llm=None, persist: bool = True):
         docs = tmp_path / "docs"

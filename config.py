@@ -41,17 +41,25 @@ TOP_K_CONTEXT = 5       # chunks passed to the LLM
 
 # --- Optional features: OFF by default so the core system stays simple ---
 # Core: upload -> extract -> chunk -> embed -> FAISS -> retrieve -> LLM -> answer + sources.
-# Flip these once the core works (or set e.g. RAG_RERANK=1 in the environment).
+# Flip these once the core works (or set e.g. RAG_MEMORY=1 in the environment).
 def _flag(name: str, default: str = "0") -> bool:
     return os.environ.get(name, default) == "1"
 
-ENABLE_RERANKER = _flag("RAG_RERANK")           # cross-encoder reranking of retrieved chunks
+# Cross-encoder reranking. On by default: the largest measured gain on full QASPER
+# (Recall@1 0.273 -> 0.316, MRR 0.429 -> 0.474) for ~0.5 s per question. RAG_RERANK=0 turns it off.
+ENABLE_RERANKER = _flag("RAG_RERANK", "1")
 # BM25 keyword search fused with FAISS. On by default: on full QASPER it raised every
 # metric (Recall@10 0.839 -> 0.866) for ~5 ms extra per query.
 ENABLE_HYBRID = _flag("RAG_HYBRID", "1")
 # How many retrieved chunks the cross-encoder rescores. 10 matched 20 on MRR on full
 # QASPER (0.474 vs 0.470) at lower latency.
 RERANK_CANDIDATES = 10
+# Reply "not found" without calling the LLM when even the best passage's cross-encoder
+# score is below this (only applies when reranking is on). Calibrated on full QASPER:
+# refuses 52% of off-topic questions (asked against the wrong paper) but only 4.7% of
+# answerable ones. On-topic unanswerable questions score like answerable ones, so this
+# catches just 12% of them. None disables it.
+MIN_RERANK_SCORE: float | None = -8.0
 ENABLE_QUERY_REWRITE = _flag("RAG_REWRITE")     # turn follow-ups into standalone queries (needs Claude)
 ENABLE_MEMORY = _flag("RAG_MEMORY")             # send chat history to the LLM (needs Claude)
 ENABLE_STUDY_TOOLS = _flag("RAG_STUDY_TOOLS")   # summaries, MCQs, document comparison (needs Claude)
