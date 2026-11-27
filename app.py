@@ -151,10 +151,20 @@ with st.sidebar:
 
 
 # ------------------------------------------------------------------ helpers
+def source_match(score: float) -> str:
+    """Label for how relevant the best source is (cross-encoder score), not whether
+    the answer is right. Cut points are near the quartiles of answerable QASPER questions."""
+    level = "🟢 High" if score >= 2 else "🟡 Medium" if score >= -3 else "🔴 Low"
+    return f"Source match: {level}"
+
+
 def show_sources(sources) -> None:
     """sources: list of (excerpt number, hit, sentences to highlight)."""
     if not sources:
         return
+    scores = [h.rerank_score for _, h, _ in sources if h.rerank_score is not None]
+    if scores:                                  # only when reranking is on
+        st.caption(source_match(max(scores)))
     with st.expander(f"Sources ({len(sources)})"):
         for i, h, marks in sources:
             rr = f" · rerank {h.rerank_score:.2f}" if h.rerank_score is not None else ""

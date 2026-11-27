@@ -117,6 +117,20 @@ Dense and hybrid search take ~20–30 ms per query; reranking adds roughly 0.4�
 
 Error breakdown (`results/answers_qasper_*.json`): FLAN-T5's failures are mostly retrieval-side. Its 512-token window holds about one excerpt, and for 14 of 26 answerable questions that excerpt didn't contain the evidence. Qwen-0.5B usually had the evidence but answered wrongly (14 of 26). Qwen-1.5B contained the reference in 15 of 26.
 
+### FLAN-T5 error breakdown: 200 questions from full QASPER (hybrid + reranker + cutoff)
+
+Answer recall 0.278 [0.23–0.33], Answer-F1 0.211 [0.17–0.26], ~6 s per answer. Of the 186 answerable questions:
+
+| Outcome | Questions | Share |
+|---|---|---|
+| Correct (answer recall ≥ 0.8) | 30 | 16% |
+| Evidence in the top 5 but not in what fit FLAN-T5's input | 65 | 35% |
+| Evidence not in the top 5 | 40 | 22% |
+| Evidence reached the model, answer still wrong | 32 | 17% |
+| Wrongly refused | 19 | 10% |
+
+The largest single weak point is the model's small input. Of the 14 unanswerable questions, 3 were correctly refused.
+
 Local models are loaded in float32 on purpose. Loading Qwen in its stored bfloat16 format made it about 100× slower on a laptop CPU, which has no fast bfloat16 instructions.
 
 ### Embedding model and chunk size: QASPER 20-paper subset (72 answerable questions, dense search)
