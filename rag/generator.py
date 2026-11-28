@@ -74,7 +74,7 @@ class ClaudeLLM:
 
 
 class LocalLLM:
-    """Offline generator running on the CPU with PyTorch. Two kinds of model work:
+    """Offline generator running with PyTorch (GPU if available, else CPU). Two kinds of model work:
       * instruction-tuned chat models (e.g. Qwen2.5-Instruct): long context, follow the
         same cite-your-sources prompt as Claude, answers streamed token by token;
       * seq2seq models (e.g. FLAN-T5): small and fast, but a 512-token input limit.
@@ -97,8 +97,11 @@ class LocalLLM:
         # Force float32: recent transformers versions load a checkpoint's own dtype (often
         # bfloat16), which most CPUs have no fast instructions for. On a laptop CPU this
         # made Qwen2.5-0.5B read a 1,500-token prompt in ~1,100 s instead of ~9 s.
-        self.model = cls.from_pretrained(model_name, dtype=torch.float32).eval()
-        self.name = f"{model_name} (local)"
+        # On an NVIDIA GPU, half precision is fast and halves the memory needed.
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        dtype = torch.float16 if self.device == "cuda" and self.kind == "causal" else torch.float32
+        self.model = cls.from_pretrained(model_name, dtype=dtype).to(self.device).eval()
+        self.name = f"{model_name} (local, {self.device})"
 
     # ---- context budget: the pipeline sends only as many excerpts as fit ----
     def count_tokens(self, text: str) -> int:
@@ -121,7 +124,7 @@ class LocalLLM:
         if self.kind == "seq2seq":
             # Question goes first so any truncation cuts context, not the question.
             inputs = self.tokenizer(self._prompt(question, context), return_tensors="pt",
-                                    truncation=True, max_length=self.INPUT_LIMIT["seq2seq"])
+                                    truncation=True, max_length=self.INPUT_LIMIT["seq2seq"]).to(self.device)
             with self.torch.no_grad():
                 out = self.model.generate(**inputs, max_new_tokens=200, num_beams=4)
             yield self.tokenizer.decode(out[0], skip_special_tokens=True)
@@ -138,7 +141,7 @@ class LocalLLM:
             {"role": "user", "content": f"<documents>\n{context}\n</documents>\n\nQuestion: {question}"},
         ]
         ids = self.tokenizer.apply_chat_template(messages, add_generation_prompt=True,
-                                                 return_tensors="pt", return_dict=True)
+                                                 return_tensors="pt", return_dict=True).to(self.device)
         streamer = TextIteratorStreamer(self.tokenizer, skip_prompt=True, skip_special_tokens=True)
         kwargs = dict(**ids, streamer=streamer, max_new_tokens=self.MAX_NEW_TOKENS, do_sample=False,
                       repetition_penalty=1.05)

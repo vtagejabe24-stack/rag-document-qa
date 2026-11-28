@@ -26,10 +26,25 @@ MAX_UPLOAD_MB = 50
 # --- Deep learning models (Hugging Face) ---
 EMBED_MODEL = "BAAI/bge-small-en-v1.5"                  # bi-encoder, 384-dim, 512-token limit
 RERANK_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"   # cross-encoder reranker
-# Offline fallback generator. FLAN-T5 answers in ~5 s on a CPU. Qwen/Qwen2.5-1.5B-Instruct
-# (~32 s) contained the reference answer far more often on QASPER (answer recall 0.61 vs
-# 0.37, 30 questions; see README) but is ~6x slower, so it is opt-in.
-LOCAL_LLM = os.environ.get("RAG_LOCAL_LLM", "google/flan-t5-base")
+# Offline fallback generator, chosen from the hardware. With an NVIDIA GPU (4 GB or more)
+# Qwen2.5-1.5B is used: on 200 QASPER questions it got 33% correct vs 16% for FLAN-T5
+# (see README). On a CPU it is too slow, so FLAN-T5 is used. RAG_LOCAL_LLM overrides.
+GPU_LLM = "Qwen/Qwen2.5-1.5B-Instruct"
+CPU_LLM = "google/flan-t5-base"
+
+
+def default_local_llm() -> str:
+    try:
+        import torch
+
+        if torch.cuda.is_available() and torch.cuda.get_device_properties(0).total_memory >= 4e9:
+            return GPU_LLM
+    except Exception:                 # no torch, or a broken GPU driver: stay on the CPU model
+        pass
+    return CPU_LLM
+
+
+LOCAL_LLM = os.environ.get("RAG_LOCAL_LLM") or default_local_llm()
 
 # --- Chunking (measured in tokens of the embedding model's tokenizer) ---
 CHUNK_SIZE = 256

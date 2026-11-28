@@ -28,6 +28,8 @@ $env:ANTHROPIC_API_KEY = "sk-ant-..."     # optional - without it a local model 
 .\.venv\Scripts\python.exe -m streamlit run app.py
 ```
 
+`.un_app.ps1` starts the app with the GPU environment (`~/rag-gpu-venv`, a CUDA build of PyTorch) if you have one.
+
 The app opens at http://localhost:8501 (add `--server.port 8502` if that port is busy). Sample documents in `data/documents/` are indexed on first launch. Embeddings are saved in `vector_db/`, so unchanged files are never re-embedded. Models are downloaded from Hugging Face on first use and cached, so later runs work offline.
 
 ### Tests
@@ -61,7 +63,7 @@ The tests use a tiny fake embedder, so they need no model downloads. They also r
 | Variable | Feature | Default |
 |---|---|---|
 | `RAG_HYBRID=0` | Turn off BM25 keyword search fused with FAISS (also a toggle in the app) | on |
-| `RAG_LOCAL_LLM=...` | Offline model, e.g. `Qwen/Qwen2.5-1.5B-Instruct` (finds answers more often, ~6× slower, streams its answer) | `google/flan-t5-base` |
+| `RAG_LOCAL_LLM=...` | Offline model, e.g. `Qwen/Qwen2.5-1.5B-Instruct` (finds answers more often, ~6× slower, streams its answer) | Qwen 1.5B with a 4 GB+ NVIDIA GPU, else `google/flan-t5-base` |
 | `RAG_RERANK=0` | Turns off cross-encoder reranking of the top retrieved chunks (also a toggle), and with it the "not found" cutoff | on |
 | `RAG_LLM=local` | Force the offline model even when Claude is configured (`claude` forces Claude) | auto |
 | `RAG_OCR=0` | Turn off OCR for scanned PDFs and images | on |
@@ -130,6 +132,15 @@ Answer recall 0.278 [0.23–0.33], Answer-F1 0.211 [0.17–0.26], ~6 s per answe
 | Wrongly refused | 19 | 10% |
 
 The largest single weak point is the model's small input. Of the 14 unanswerable questions, 3 were correctly refused.
+
+### GPU run: Qwen2.5-1.5B on the same 200 questions (RTX 4050, hybrid + reranker + cutoff)
+
+| Model | Correct (answer recall ≥ 0.8, of 186 answerable) | Answer recall | Answer-F1 [95% CI] | Evidence reached the model | Median answer length | Median time |
+|---|---|---|---|---|---|---|
+| FLAN-T5-base (CPU) | 30 (16%) | 0.278 | 0.211 [0.17–0.26] | 56 | 9 words | 2.5 s |
+| Qwen2.5-1.5B (GPU) | 61 (33%) | 0.484 | 0.236 [0.21–0.27] | 132 | 23 words | 8.4 s |
+
+Qwen reads all five excerpts, so the evidence reaches it far more often. Its answers are longer, which favours answer recall; Answer-F1 barely differs. GPU setup used PyTorch 2.14.1+cu126.
 
 Local models are loaded in float32 on purpose. Loading Qwen in its stored bfloat16 format made it about 100× slower on a laptop CPU, which has no fast bfloat16 instructions.
 

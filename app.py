@@ -192,6 +192,24 @@ def run_tool(label, fn, *args):
         st.error(f"{label} failed: {e}")
 
 
+# Example questions, offered only when the sample document that answers them is in the library.
+EXAMPLES = {
+    "deep_learning.md": ["What is the difference between a CNN and an RNN?",
+                         "What problem do LSTM networks solve?",
+                         "What is the capital of France?"],          # shows the "not found" reply
+}
+
+
+def chat_as_markdown(messages: list[dict]) -> str:
+    parts = ["# Conversation"]
+    for m in messages:
+        parts.append(f"**{'You' if m['role'] == 'user' else 'Assistant'}:** {m['content']}")
+        sources = [f"- [{i}] {h.chunk.source}, {h.chunk.location()}" for i, h, _ in m.get("hits") or []]
+        if sources:
+            parts.append("Sources:\n" + "\n".join(sources))
+    return "\n\n".join(parts) + "\n"
+
+
 # ------------------------------------------------------------------ tabs
 if config.ENABLE_STUDY_TOOLS:
     chat_tab, tools_tab = st.tabs(["💬 Chat", "🎓 Study tools"])
@@ -208,7 +226,16 @@ with chat_tab:
             if m.get("hits"):
                 show_sources(m["hits"])
 
-    if question := st.chat_input("Ask a question about your documents...", disabled=not docs):
+    clicked = None
+    examples = [q for name, qs in EXAMPLES.items() if name in docs for q in qs]
+    if examples:
+        st.caption("Try an example:")
+        for col, example in zip(st.columns(len(examples)), examples):
+            if col.button(example, use_container_width=True):
+                clicked = example
+
+    typed = st.chat_input("Ask a question about your documents...", disabled=not docs)
+    if question := typed or clicked:
         history = [{"role": m["role"], "content": m["content"]} for m in st.session_state.messages]
         st.session_state.messages.append({"role": "user", "content": question})
         with st.chat_message("user"):
@@ -229,6 +256,10 @@ with chat_tab:
                 st.session_state.messages.append({"role": "assistant", "content": text, "hits": shown})
             except Exception as e:
                 st.error(f"Something went wrong: {e}")
+
+    if st.session_state.messages:
+        st.download_button("⬇ Download chat", chat_as_markdown(st.session_state.messages),
+                           file_name="chat.md", mime="text/markdown")
 
 with (tools_tab if tools_tab is not None else st.empty()):
     if tools_tab is None:
